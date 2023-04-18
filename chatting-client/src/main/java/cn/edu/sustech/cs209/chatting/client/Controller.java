@@ -1,6 +1,7 @@
 package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
+import cn.edu.sustech.cs209.chatting.common.MessageType;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,40 +9,98 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.Pair;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.net.URL;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Controller implements Initializable {
 
     @FXML
     ListView<Message> chatContentList;
-
+    InputStream inputStream;
+    OutputStream outputStream;
+    Scanner in;
+    PrintWriter out;
     String username;
+    Socket socket;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        try {
+            socket=new Socket("localhost",8888);
+            inputStream=socket.getInputStream();
+            outputStream=socket.getOutputStream();
+            in=new Scanner(inputStream);
+            out=new PrintWriter(outputStream);
 
-        Dialog<String> dialog = new TextInputDialog();
-        dialog.setTitle("Login");
-        dialog.setHeaderText(null);
-        dialog.setContentText("Username:");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        Optional<String> input = dialog.showAndWait();
-        if (input.isPresent() && !input.get().isEmpty()) {
-            /*
-               TODO: Check if there is a user with the same name among the currently logged-in users,
-                     if so, ask the user to change the username
-             */
-            username = input.get();
+        Dialog<Pair<String, String>> loginDialog = new Dialog<>();
+        loginDialog.setTitle("Login");
+        loginDialog.setHeaderText(null);
+
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        loginDialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        // 创建账户和密码输入框
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username");
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        grid.add(new Label("Username:"), 0, 0);
+        grid.add(usernameField, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(passwordField, 1, 1);
+
+        loginDialog.getDialogPane().setContent(grid);
+
+        // 设置“Login”按钮的响应事件
+        loginDialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+
+                return new Pair<>(usernameField.getText(), passwordField.getText());
+
+            }
+            return null;
+        });
+
+        // 显示对话框，并获取用户输入的账户和密码
+        Optional<Pair<String, String>> result = loginDialog.showAndWait();
+        if (result.isPresent() && !result.get().getKey().isEmpty() && !result.get().getValue().isEmpty()) {
+            // 处理用户输入
+            String username = result.get().getKey();
+            String password = result.get().getValue();
+            Message message=new Message(System.currentTimeMillis(),username,password,username,"", MessageType.ASKFORCONNECT);
+            String aaa=Message.toJson(message);
+            out.println(aaa);
+
+
+            out.flush();
         } else {
-            System.out.println("Invalid username " + input + ", exiting");
+            // 用户未输入账户或密码，退出应用程序
+            System.out.println("Invalid username or password, exiting");
             Platform.exit();
         }
 
