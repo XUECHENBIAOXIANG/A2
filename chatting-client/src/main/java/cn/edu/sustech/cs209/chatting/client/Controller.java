@@ -3,6 +3,8 @@ package cn.edu.sustech.cs209.chatting.client;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -11,6 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.Pair;
@@ -21,26 +24,32 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Controller implements Initializable {
-
+    private List<String> users = new ArrayList<>();
+    List<String> usernames;
+    @FXML
+    ListView<String> onlineUsersList;
     @FXML
     ListView<Message> chatContentList;
+    @FXML
+    TextArea inputArea;
     InputStream inputStream;
     OutputStream outputStream;
     Scanner in;
     PrintWriter out;
-    String username;
+    String username="";
     Socket socket;
+    String denglv="";
+    Long chating= Long.valueOf(1);
+    ObservableList<Message> messages = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         try {
+
             socket=new Socket("localhost",8888);
             inputStream=socket.getInputStream();
             outputStream=socket.getOutputStream();
@@ -50,6 +59,47 @@ public class Controller implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        new Thread(() -> {
+            while (!Thread.interrupted()) {  // 修改while条件，当线程被中断时跳出循环
+                if (in.hasNext()){
+                    String line=in.nextLine();
+                    Message message= Message.fromJson(line);
+
+                    switch (message.getType()){
+                        case  CONNECT:
+                            username=message.getSendTo();
+
+                            break;
+                        case DISCONNECT:
+                            denglv="shibai";
+                            Platform.runLater(() -> {
+                                // 在 UI 线程中弹出提示
+                                Alert alert = new Alert(Alert.AlertType.ERROR);
+                                alert.setTitle("Error");
+                                alert.setHeaderText("Password incorrect");
+                                alert.setContentText("密码错误 and try again.");
+                                alert.showAndWait();
+                                try {
+                                    socket.close();in.close();
+                                    out.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                System.out.println(1);
+                                // 在 UI 线程中关闭程序
+                                Platform.exit();
+                                Thread.currentThread().interrupt(); // 中断线程
+                                System.exit(0);
+
+                            });
+
+                            break;
+                    }
+                }
+            }
+
+        }).start();
 
         Dialog<Pair<String, String>> loginDialog = new Dialog<>();
         loginDialog.setTitle("Login");
@@ -102,9 +152,43 @@ public class Controller implements Initializable {
             System.out.println("Invalid username or password, exiting");
             Platform.exit();
         }
+         Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.CONNECT);
+        String[] dd=new String[2];
+        dd[0]="123";
+        dd[1]="253";
+        String[] bb=new String[2];
+        bb[0]="123";
+        bb[1]="";
+        message.getChat().a=dd;
+        message.getChat().b=bb;
 
+        onlineUsersList.setItems(FXCollections.observableArrayList(users));
+
+        chatContentList.getItems().add(message);
+
+
+        chatContentList.setItems(messages);
         chatContentList.setCellFactory(new MessageCellFactory());
+
     }
+
+    public void updateOnlineUsersList(List<String> usernames) {
+
+        onlineUsersList.getItems().clear();
+
+
+        for (String username : usernames) {
+            onlineUsersList.getItems().add(username);
+        }
+    }
+
+    public void onMessageReceived(Message msg) {
+        Platform.runLater(() -> {
+            messages.clear();
+            messages.add(msg);
+        });
+    }
+
 
     @FXML
     public void createPrivateChat() {
@@ -155,14 +239,24 @@ public class Controller implements Initializable {
      */
     @FXML
     public void doSendMessage() {
-        // TODO
+        String text = inputArea.getText().trim(); // 获取输入框的文本内容
+        if (!text.isEmpty()&chating!=0) { // 确保输入内容不为空且选择过某个聊天
+           Message m=new Message(System.currentTimeMillis(),username,"","",text,MessageType.Send);
+           m.getChat().setId(chating);
+            String s=Message.toJson(m);
+            out.println(s);
+            out.flush();
+            inputArea.clear();
+        }
     }
 
     /**
      * You may change the cell factory if you changed the design of {@code Message} model.
      * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
      */
+
     private class MessageCellFactory implements Callback<ListView<Message>, ListCell<Message>> {
+
         @Override
         public ListCell<Message> call(ListView<Message> param) {
             return new ListCell<Message>() {
@@ -170,32 +264,46 @@ public class Controller implements Initializable {
                 @Override
                 public void updateItem(Message msg, boolean empty) {
                     super.updateItem(msg, empty);
-                    if (empty || Objects.isNull(msg)) {
+
+                    if (empty || msg == null) {
+
                         return;
                     }
 
-                    HBox wrapper = new HBox();
-                    Label nameLabel = new Label(msg.getSentBy());
-                    Label msgLabel = new Label(msg.getData());
+                    VBox container = new VBox();
 
-                    nameLabel.setPrefSize(50, 20);
-                    nameLabel.setWrapText(true);
-                    nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+                    for (int i = 0; i < msg.getChat().getA().length; i++) {
+                        HBox wrapper = new HBox();
+                        Label nameLabel = new Label(msg.getChat().getB()[i] );
+                        Label msgLabel = new Label(msg.getChat().getA()[i]);
 
-                    if (username.equals(msg.getSentBy())) {
-                        wrapper.setAlignment(Pos.TOP_RIGHT);
-                        wrapper.getChildren().addAll(msgLabel, nameLabel);
-                        msgLabel.setPadding(new Insets(0, 20, 0, 0));
-                    } else {
-                        wrapper.setAlignment(Pos.TOP_LEFT);
-                        wrapper.getChildren().addAll(nameLabel, msgLabel);
-                        msgLabel.setPadding(new Insets(0, 0, 0, 20));
+
+                        nameLabel.setPrefSize(50, 20);
+                        nameLabel.setWrapText(true);
+                        nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+
+
+                        if (msg.getChat().getB()[i].equals(username)) {
+                            wrapper.setAlignment(Pos.TOP_RIGHT);
+
+                            wrapper.getChildren().addAll(msgLabel, nameLabel);
+                            nameLabel.setPadding(new Insets(0, 20, 0, 0));
+                        } else {
+                            System.out.println(i);
+                            System.out.println(msg.getChat().getB()[i]);
+                            wrapper.setAlignment(Pos.TOP_LEFT);
+                            wrapper.getChildren().addAll(nameLabel, msgLabel);
+                            nameLabel.setPadding(new Insets(0, 0, 0, 20));
+                        }
+
+                        container.getChildren().add(wrapper);
                     }
 
                     setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                    setGraphic(wrapper);
+                    setGraphic(container);
                 }
             };
         }
     }
+
 }

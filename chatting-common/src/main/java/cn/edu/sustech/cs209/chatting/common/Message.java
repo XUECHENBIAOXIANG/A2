@@ -5,6 +5,11 @@ import com.google.gson.Gson;
 public class Message {
 
     private Long timestamp;
+    private Chat chat=new Chat();
+
+    public Chat getChat() {
+        return chat;
+    }
 
     private String sentBy;
     private String mima;
