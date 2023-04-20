@@ -3,14 +3,21 @@ package cn.edu.sustech.cs209.chatting.client;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.Pair;
@@ -21,26 +28,36 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Controller implements Initializable {
-
+    private List<String> chat_users = new ArrayList<>();
+    private List<String> online=new ArrayList<>();
+    @FXML Label currentUsername;
+    @FXML Label currentOnlineCnt;
+    @FXML
+    ListView<String> chatList;
+    @FXML
+    ListView<String> onlineUsersList;
     @FXML
     ListView<Message> chatContentList;
+    @FXML
+    TextArea inputArea;
     InputStream inputStream;
     OutputStream outputStream;
     Scanner in;
     PrintWriter out;
-    String username;
+    String username="";
     Socket socket;
+    String denglv="";
+    Long chating= 9999l;
+    ObservableList<Message> messages = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         try {
+
             socket=new Socket("localhost",8888);
             inputStream=socket.getInputStream();
             outputStream=socket.getOutputStream();
@@ -50,6 +67,107 @@ public class Controller implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        new Thread(() -> {
+            try {
+                while (!Thread.interrupted()) {  // 修改while条件，当线程被中断时跳出循环
+                    if (in!=null&&in.hasNext()){
+                        String line=in.nextLine();
+                        Message message= Message.fromJson(line);
+
+                        switch (message.getType()){
+                            case  CONNECT:
+
+                                Platform.runLater(()->{
+                                    username=message.getSendTo();
+                                    chat_users=message.getPeople();
+                                    online=message.getAllchat();
+                                    chatList.setItems(FXCollections.observableArrayList(online));
+                                    currentOnlineCnt.setText("Online:"+chat_users.size());
+                                    currentUsername.setText("Current User: "+username);
+                                    onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
+
+                                });
+
+                                break;
+                            case OtherConnect:
+
+                                Platform.runLater(()->{ chat_users=message.getPeople();
+                                    currentOnlineCnt.setText("Online:"+chat_users.size());
+                                    onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
+                                });
+                                break;
+                            case DISCONNECT:
+                                denglv="shibai";
+                                Platform.runLater(() -> {
+                                    // 在 UI 线程中弹出提示
+                                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                                    alert.setTitle("Error");
+                                    alert.setHeaderText("Password incorrect");
+                                    alert.setContentText("密码错误 and try again.");
+                                    alert.showAndWait();
+                                    try {
+                                        socket.close();in.close();
+                                        out.close();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    System.out.println(1);
+                                    // 在 UI 线程中关闭程序
+                                    Platform.exit();
+                                    Thread.currentThread().interrupt(); // 中断线程
+                                    System.exit(0);
+
+                                });
+                                break;
+                            case Receive:
+
+                                Platform.runLater(()-> {
+                               /* chat_users .clear();
+                                chat_users=message.getAllchat();*/
+                                    if (!message.getData().equals("1")){
+                                    online.clear();
+                                    online.addAll(message.getAllchat());
+                                    System.out.println(message.getAllchat());
+                                    chatList.setItems(FXCollections.observableArrayList(online));}
+                                    if (message.getChat().getId()==chating){
+                                        Platform.runLater(() -> {
+                                            messages.clear();
+                                            messages.add(message);
+                                            chatContentList.setItems(messages);
+                                            chatContentList.setCellFactory(new MessageCellFactory());
+                                        });
+                                    }
+                                } );
+
+
+                                break;
+                            case GetChat:
+                                chating=message.getChat().getId();
+                                Platform.runLater(() ->{
+                                    messages.clear();
+                                    messages.add(message);
+                                    online.clear();
+                                    online.addAll(message.getAllchat());
+
+                                    chatContentList.setItems(messages);
+                                    chatContentList.setCellFactory(new MessageCellFactory());
+                                    chatList.setItems(FXCollections.observableArrayList(online));
+                                });
+                                break;
+
+                        }
+                    }else if(in==null) {
+                        System.out.println("服务器未开");
+                        break;
+                    }
+                }
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }).start();
 
         Dialog<Pair<String, String>> loginDialog = new Dialog<>();
         loginDialog.setTitle("Login");
@@ -102,24 +220,99 @@ public class Controller implements Initializable {
             System.out.println("Invalid username or password, exiting");
             Platform.exit();
         }
+         Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.CONNECT);
+        String[] dd=new String[2];
+        dd[0]="123";
+        dd[1]="253";
+        String[] bb=new String[2];
+        bb[0]="123";
+        bb[1]="";
+        message.getChat().a=dd;
+        message.getChat().b=bb;
+        chat_users.add("qq");
+        chat_users.add("qqq");
+        chatList.setItems(FXCollections.observableArrayList(online));
 
+
+        onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
+
+
+        chatList.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                String selectedItem = chatList.getSelectionModel().getSelectedItem();
+                if (selectedItem!=null) {
+                    Message message = new Message(System.currentTimeMillis(), "", "", "", "1", MessageType.newchat);
+                    List<String> a = Arrays.asList(selectedItem.split(",", -1));
+                    message.setAskchat(a);
+                    String x = Message.toJson(message);
+                    out.println(x);
+                    out.flush();
+                }
+            }
+        });
+
+        chatContentList.getItems().add(message);
+
+
+        chatContentList.setItems(messages);
         chatContentList.setCellFactory(new MessageCellFactory());
+
     }
+
+    public void updateOnlineUsersList(List<String> usernames) {
+
+        onlineUsersList.getItems().clear();
+
+
+        for (String username : usernames) {
+            onlineUsersList.getItems().add(username);
+        }
+    }
+
+    public void onMessageReceived(Message msg) {
+        Platform.runLater(() -> {
+            messages.clear();
+            messages.add(msg);
+        });
+    }
+
 
     @FXML
     public void createPrivateChat() {
-        AtomicReference<String> user = new AtomicReference<>();
+        AtomicReference<String> user1 = new AtomicReference<>();
 
         Stage stage = new Stage();
         ComboBox<String> userSel = new ComboBox<>();
 
         // FIXME: get the user list from server, the current user's name should be filtered out
-        userSel.getItems().addAll("Item 1", "Item 2", "Item 3");
+        userSel.getItems().addAll(chat_users);
+        userSel.getItems().remove(username);
+
 
         Button okBtn = new Button("OK");
         okBtn.setOnAction(e -> {
-            user.set(userSel.getSelectionModel().getSelectedItem());
-            stage.close();
+            user1.set(userSel.getSelectionModel().getSelectedItem());
+
+            Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.newchat);
+            List<String> a=new ArrayList<>();
+            a.add(user1.get());
+            if (a.get(0)==null){
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("renshubugou");
+                alert.setContentText("人数不够，请选择至少一人");
+                alert.showAndWait();
+            }else {
+
+                a.add(username);
+                message.setAskchat(a);
+                String x=Message.toJson(message);
+                out.println(x);
+                out.flush();
+                stage.close();
+            }
+
         });
 
         HBox box = new HBox(10);
@@ -145,6 +338,62 @@ public class Controller implements Initializable {
      */
     @FXML
     public void createGroupChat() {
+        // 获取所有在线用户列表，假设为List<String> allUsers
+        List<String> allUsers = chat_users;
+
+        // 弹出窗口，让用户选择要邀请的人
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+
+        VBox vBox = new VBox();
+        vBox.setPadding(new Insets(20));
+
+        Label label = new Label("Select users to join the group chat:");
+        vBox.getChildren().add(label);
+
+        // 创建一个 CheckBox 列表，用于选择用户
+        List<CheckBox> checkBoxList = new ArrayList<>();
+        for (String user : allUsers) {
+            if (!user.equals(username)){
+            CheckBox checkBox = new CheckBox(user);
+            checkBoxList.add(checkBox);
+            vBox.getChildren().add(checkBox);}
+        }
+
+        Button okBtn = new Button("OK");
+        okBtn.setOnAction(e -> {
+            // 获取选择的用户，创建群聊
+            int x=1;
+            List<String> selectedUsers = new ArrayList<>();
+            for (CheckBox checkBox : checkBoxList) {
+                if (checkBox.isSelected()) {x++;
+                    selectedUsers.add(checkBox.getText());
+                }
+            }
+             if (x>2){
+                    selectedUsers.add(username);
+                 Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.newchat);
+                 message.setAskchat(selectedUsers);
+                 String y=Message.toJson(message);
+                 out.println(y);
+                 out.flush();
+
+             }else {
+                 Alert alert = new Alert(Alert.AlertType.ERROR);
+                 alert.setTitle("Error");
+                 alert.setHeaderText("renshubugou");
+                 alert.setContentText("人数不够，请选择至少两人");
+                 alert.showAndWait();
+             }
+            // 在这里创建群聊，将 selectedUsers 传入即可
+
+            stage.close();
+        });
+        vBox.getChildren().add(okBtn);
+
+        Scene scene = new Scene(vBox);
+        stage.setScene(scene);
+        stage.showAndWait();
     }
 
     /**
@@ -155,14 +404,30 @@ public class Controller implements Initializable {
      */
     @FXML
     public void doSendMessage() {
-        // TODO
+        String text = inputArea.getText().trim(); // 获取输入框的文本内容
+        if (!text.isEmpty()&chating!=9999l) { // 确保输入内容不为空且选择过某个聊天
+           Message m=new Message(System.currentTimeMillis(),username,"","",text,MessageType.Send);
+           m.getChat().setId(chating);
+            String s=Message.toJson(m);
+            out.println(s);
+            out.flush();
+            inputArea.clear();
+        }
+    }
+
+    public void doUploadFile(ActionEvent actionEvent) {
+    }
+
+    public void doDownloadFile(ActionEvent actionEvent) {
     }
 
     /**
      * You may change the cell factory if you changed the design of {@code Message} model.
      * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
      */
+
     private class MessageCellFactory implements Callback<ListView<Message>, ListCell<Message>> {
+
         @Override
         public ListCell<Message> call(ListView<Message> param) {
             return new ListCell<Message>() {
@@ -170,32 +435,45 @@ public class Controller implements Initializable {
                 @Override
                 public void updateItem(Message msg, boolean empty) {
                     super.updateItem(msg, empty);
-                    if (empty || Objects.isNull(msg)) {
+
+                    if (empty || msg == null) {
+
                         return;
                     }
 
-                    HBox wrapper = new HBox();
-                    Label nameLabel = new Label(msg.getSentBy());
-                    Label msgLabel = new Label(msg.getData());
+                    VBox container = new VBox();
 
-                    nameLabel.setPrefSize(50, 20);
-                    nameLabel.setWrapText(true);
-                    nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+                    for (int i = 0; i < msg.getChat().getA().length; i++) {
+                        HBox wrapper = new HBox();
+                        Label nameLabel = new Label(msg.getChat().getB()[i] );
+                        Label msgLabel = new Label(msg.getChat().getA()[i]);
 
-                    if (username.equals(msg.getSentBy())) {
-                        wrapper.setAlignment(Pos.TOP_RIGHT);
-                        wrapper.getChildren().addAll(msgLabel, nameLabel);
-                        msgLabel.setPadding(new Insets(0, 20, 0, 0));
-                    } else {
-                        wrapper.setAlignment(Pos.TOP_LEFT);
-                        wrapper.getChildren().addAll(nameLabel, msgLabel);
-                        msgLabel.setPadding(new Insets(0, 0, 0, 20));
+
+                        nameLabel.setPrefSize(50, 20);
+                        nameLabel.setWrapText(true);
+                        nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+
+
+                        if (msg.getChat().getB()[i].equals(username)) {
+                            wrapper.setAlignment(Pos.TOP_RIGHT);
+
+                            wrapper.getChildren().addAll(msgLabel, nameLabel);
+                            nameLabel.setPadding(new Insets(0, 20, 0, 0));
+                        } else {
+
+                            wrapper.setAlignment(Pos.TOP_LEFT);
+                            wrapper.getChildren().addAll(nameLabel, msgLabel);
+                            nameLabel.setPadding(new Insets(0, 0, 0, 20));
+                        }
+
+                        container.getChildren().add(wrapper);
                     }
 
                     setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                    setGraphic(wrapper);
+                    setGraphic(container);
                 }
             };
         }
     }
+
 }
