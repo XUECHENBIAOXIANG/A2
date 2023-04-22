@@ -17,11 +17,14 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.Pair;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.*;
 import java.net.Socket;
@@ -466,6 +469,36 @@ public class Controller implements Initializable {
 
         }
     }
+
+    public void showEmojiSelector(ActionEvent actionEvent) {
+
+            Dialog<String> dialog = new Dialog<>();
+            dialog.setTitle("Select Emoji");
+            dialog.setHeaderText("Please select an emoji:");
+            ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+            ListView<String> listView = new ListView<>();
+        listView.setCellFactory(param -> new EmojiCell());
+            ObservableList<String> emojiList = FXCollections.observableArrayList("😊", "😂", "👍", "❤ ","😂", "😊", "👍", "👎", "🤔", "😘", "😍", "🤩", "🙏", "👋", "💪", "🤢", "🤮", "🤯", "😱", "😴", "😷", "🤒", "🥺", "👀");
+            listView.setItems(emojiList);
+            listView.getSelectionModel().selectFirst();
+
+            dialog.getDialogPane().setContent(listView);
+
+            dialog.setResultConverter(dialogButton -> {
+                if (dialogButton == okButtonType) {
+                    return listView.getSelectionModel().getSelectedItem();
+                }
+                return null;
+            });
+
+            Optional<String> result = dialog.showAndWait();
+            if (result.isPresent()) {
+                inputArea.appendText(result.get());
+            }
+    }
+
     /**
      * You may change the cell factory if you changed the design of {@code Message} model.
      * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
@@ -482,7 +515,8 @@ public class Controller implements Initializable {
                     super.updateItem(msg, empty);
 
                     if (empty || msg == null) {
-
+                        setText(null);
+                        setGraphic(null);
                         return;
                     }
 
@@ -496,19 +530,32 @@ public class Controller implements Initializable {
 
                         nameLabel.setPrefSize(50, 20);
                         nameLabel.setWrapText(true);
-                        nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+                        nameLabel.setStyle("-fx-font-weight: bold;");
+                        Font font = Font.font("Segoe UI Emoji", FontWeight.NORMAL,26);
 
+                        String message = msg.getChat().getA()[i].replaceAll("\\\\u([0-9A-Fa-f]{4})", "&#x$1;");
+                        message = StringEscapeUtils.unescapeHtml4(message);
+
+                        msgLabel.setFont(font);
+                        msgLabel.setText(message);
+                        msgLabel.setPadding(new Insets(5));
+                        msgLabel.setStyle("-fx-background-color: #efefef; -fx-background-radius: 5px;");
 
                         if (msg.getChat().getB()[i].equals(username)) {
                             wrapper.setAlignment(Pos.TOP_RIGHT);
-
+                            nameLabel.setPadding(new Insets(0, 10, 0, 0));
+                            msgLabel.setPadding(new Insets(5, 15, 5, 15));
+                            msgLabel.setStyle("-fx-background-color: #007bff; -fx-background-radius: 5px; -fx-text-fill: white;");
+                            msgLabel.setAlignment(Pos.CENTER_RIGHT);
                             wrapper.getChildren().addAll(msgLabel, nameLabel);
-                            nameLabel.setPadding(new Insets(0, 20, 0, 0));
+                            /*nameLabel.setPadding(new Insets(0, 20, 0, 0));*/
                         } else {
-
+                            nameLabel.setPadding(new Insets(0, 0, 0, 10));
+                            msgLabel.setPadding(new Insets(5, 15, 5, 15));
+                            msgLabel.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 5px;");
                             wrapper.setAlignment(Pos.TOP_LEFT);
                             wrapper.getChildren().addAll(nameLabel, msgLabel);
-                            nameLabel.setPadding(new Insets(0, 0, 0, 20));
+                            /*nameLabel.setPadding(new Insets(0, 0, 0, 20));*/
                         }
 
                         container.getChildren().add(wrapper);

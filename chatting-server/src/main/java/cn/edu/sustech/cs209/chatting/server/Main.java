@@ -379,9 +379,23 @@ public class Main {
                             }
                             long rooo=message.getChat().getId();
                             String wf="insert into chat_information values (?,?,?,?,?)";
-
-
-
+                            String findwho1="select chatwho from chat_information where id=?";
+                            PreparedStatement preparedStatementwho1= con.prepareStatement(findwho1);
+                            preparedStatementwho1.setLong(1,rooo);
+                            ResultSet whoo1= preparedStatementwho1.executeQuery();
+                            String wholist1 = null;
+                            if (whoo1.next()){
+                                wholist1=whoo1.getString(1);
+                            }
+                            PreparedStatement wf1= con.prepareStatement(wf);
+                            Timestamp timestamp11 = new Timestamp(message.getTimestamp());
+                            SimpleDateFormat df1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+                            wf1.setTimestamp(1,Timestamp.valueOf(df1.format(timestamp11)));
+                            wf1.setLong(2,rooo);
+                            wf1.setString(3,message.getSentBy());
+                            wf1.setString(4,"我上传了 "+fileName);
+                            wf1.setString(5,wholist1);
+                            wf1.execute();
 
                             break;
                         case askfile:

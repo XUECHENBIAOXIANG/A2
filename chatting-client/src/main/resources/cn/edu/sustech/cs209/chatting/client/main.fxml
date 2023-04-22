@@ -32,6 +32,7 @@
                 <HBox>
                     <Button mnemonicParsing="false" onAction="#doUploadFile" text="Upload"/>
                     <Button mnemonicParsing="false" onAction="#doDownloadFile" text="Download"/>
+                    <Button mnemonicParsing="false" onAction="#showEmojiSelector" text="😊"/>
                 </HBox>
                 <HBox prefHeight="100.0" prefWidth="624.0">
                     <TextArea fx:id="inputArea" prefHeight="138.0" prefWidth="624.0" HBox.hgrow="ALWAYS"/>
