@@ -23,8 +23,9 @@
     </MenuBar>
     <SplitPane dividerPositions="0.25" focusTraversable="true" VBox.vgrow="ALWAYS">
         <VBox>
-            <ListView fx:id="onlineUsersList" prefHeight="200.0" prefWidth="200.0"/>
-            <ListView fx:id="chatList" prefHeight="200.0" prefWidth="200.0"/>
+            <ListView fx:id="onlineUsersList" prefHeight="300.0" prefWidth="200.0"/>
+            <Label text="上方是当前服务器在线人员，下方为我的聊天"/>
+            <ListView fx:id="chatList" prefHeight="400.0" prefWidth="200.0"/>
         </VBox>
         <SplitPane dividerPositions="0.85" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0">
             <ListView fx:id="chatContentList" prefHeight="200.0" prefWidth="200.0"/>
@@ -32,6 +33,7 @@
                 <HBox>
                     <Button mnemonicParsing="false" onAction="#doUploadFile" text="Upload"/>
                     <Button mnemonicParsing="false" onAction="#doDownloadFile" text="Download"/>
+                    <Button mnemonicParsing="false" onAction="#showEmojiSelector" text="😊"/>
                 </HBox>
                 <HBox prefHeight="100.0" prefWidth="624.0">
                     <TextArea fx:id="inputArea" prefHeight="138.0" prefWidth="624.0" HBox.hgrow="ALWAYS"/>

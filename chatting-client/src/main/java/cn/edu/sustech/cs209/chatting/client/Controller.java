@@ -17,11 +17,14 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.Pair;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.*;
 import java.net.Socket;
@@ -33,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Controller implements Initializable {
+
     private List<String> chat_users = new ArrayList<>();
     private List<String> online=new ArrayList<>();
     @FXML Label currentUsername;
@@ -58,6 +62,7 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
         try {
 
             socket=new Socket("localhost",8888);
@@ -72,7 +77,7 @@ public class Controller implements Initializable {
         }
         new Thread(() -> {
             try {
-                while (!Thread.interrupted()) {  // 修改while条件，当线程被中断时跳出循环
+                while (true) {  // 修改while条件，当线程被中断时跳出循环
                     if (in!=null&&in.hasNext()){
                         String line=in.nextLine();
                         Message message= Message.fromJson(line);
@@ -99,6 +104,23 @@ public class Controller implements Initializable {
                                     onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
                                 });
                                 break;
+                            case yijing:
+                                Platform.runLater(() -> {
+                                    // 在 UI 线程中弹出提示
+                                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                                    alert.setTitle("Error");
+                                    alert.setHeaderText("该用户已经登录");
+                                    alert.setContentText("该用户已经登录");
+                                    alert.showAndWait();
+                                    try {
+                                        socket.close();in.close();
+                                        out.close();
+                                        System.exit(0);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                                break;
                             case DISCONNECT:
                                 denglv="shibai";
                                 Platform.runLater(() -> {
@@ -111,16 +133,10 @@ public class Controller implements Initializable {
                                     try {
                                         socket.close();in.close();
                                         out.close();
+                                        System.exit(0);
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
-
-                                    System.out.println(1);
-                                    // 在 UI 线程中关闭程序
-                                    Platform.exit();
-                                    Thread.currentThread().interrupt(); // 中断线程
-                                    System.exit(0);
-
                                 });
                                 break;
                             case Receive:
@@ -128,10 +144,18 @@ public class Controller implements Initializable {
                                 Platform.runLater(()-> {
                                /* chat_users .clear();
                                 chat_users=message.getAllchat();*/
+
+                                    System.out.println(message.getChat().getId());
+                                    System.out.println(chating);
                                     if (!message.getData().equals("1")){
+                                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                        alert.setTitle("通知");
+                                        alert.setHeaderText("您有新的信息");
+                                        alert.setContentText("您有新的信息");
+                                        alert.showAndWait();
                                     online.clear();
                                     online.addAll(message.getAllchat());
-                                    System.out.println(message.getAllchat());
+
                                     chatList.setItems(FXCollections.observableArrayList(online));}
                                     if (message.getChat().getId()==chating){
                                         Platform.runLater(() -> {
@@ -142,9 +166,32 @@ public class Controller implements Initializable {
                                         });
                                     }
                                 } );
-
-
                                 break;
+                            case myreceive:
+
+
+                                Platform.runLater(()-> {
+                               /* chat_users .clear();
+                                chat_users=message.getAllchat();*/
+                                    System.out.println(message.getChat().getId());
+                                    System.out.println(chating);
+                                    if (!message.getData().equals("1")){
+                                        online.clear();
+                                        online.addAll(message.getAllchat());
+                                        System.out.println(message.getAllchat());
+                                        chatList.setItems(FXCollections.observableArrayList(online));}
+                                    if (message.getChat().getId()==chating){
+                                        Platform.runLater(() -> {
+                                            messages.clear();
+                                            messages.add(message);
+                                            chatContentList.setItems(messages);
+                                            chatContentList.setCellFactory(new MessageCellFactory());
+                                        });
+                                    }
+                                } );
+                                break;
+
+
                             case GetChat:
                                 chating=message.getChat().getId();
                                 Platform.runLater(() ->{
@@ -167,8 +214,24 @@ public class Controller implements Initializable {
                                 break;
 
                         }
-                    }else if(in==null) {
-                        System.out.println("服务器未开");
+                    }else  {
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.WARNING);
+                            alert.setTitle("连接断开");
+                            alert.setHeaderText(null);
+                            alert.setContentText("与服务器连接断开");
+                            alert.showAndWait();
+                            in.close();
+                            out.close();
+                                    try {
+                                        socket.close();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    System.exit(0); // 关闭进程
+
+                        }
+                        );
                         break;
                     }
                 }
@@ -227,7 +290,11 @@ public class Controller implements Initializable {
             out.flush();
         } else {
             // 用户未输入账户或密码，退出应用程序
-            System.out.println("Invalid username or password, exiting");
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("用户未输入账户或密码");
+            alert.setHeaderText(null);
+            alert.setContentText("用户未输入账户或密码");
+            alert.showAndWait();
             Platform.exit();
         }
          Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.CONNECT);
@@ -239,8 +306,7 @@ public class Controller implements Initializable {
         bb[1]="";
         message.getChat().a=dd;
         message.getChat().b=bb;
-        chat_users.add("qq");
-        chat_users.add("qqq");
+
         chatList.setItems(FXCollections.observableArrayList(online));
 
 
@@ -267,6 +333,7 @@ public class Controller implements Initializable {
 
         chatContentList.setItems(messages);
         chatContentList.setCellFactory(new MessageCellFactory());
+
 
     }
 
@@ -415,8 +482,10 @@ public class Controller implements Initializable {
     @FXML
     public void doSendMessage() {
         String text = inputArea.getText().trim(); // 获取输入框的文本内容
+        System.out.println(chating);
         if (!text.isEmpty()&chating!=9999l) { // 确保输入内容不为空且选择过某个聊天
            Message m=new Message(System.currentTimeMillis(),username,"","",text,MessageType.Send);
+
            m.getChat().setId(chating);
             String s=Message.toJson(m);
             out.println(s);
@@ -466,6 +535,36 @@ public class Controller implements Initializable {
 
         }
     }
+
+    public void showEmojiSelector(ActionEvent actionEvent) {
+
+            Dialog<String> dialog = new Dialog<>();
+            dialog.setTitle("Select Emoji");
+            dialog.setHeaderText("Please select an emoji:");
+            ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+            ListView<String> listView = new ListView<>();
+        listView.setCellFactory(param -> new EmojiCell());
+            ObservableList<String> emojiList = FXCollections.observableArrayList("😊", "😂", "👍", "❤ ","😂", "😊", "👍", "👎", "🤔", "😘", "😍", "🤩", "🙏", "👋", "💪", "🤢", "🤮", "🤯", "😱", "😴", "😷", "🤒", "🥺", "👀");
+            listView.setItems(emojiList);
+            listView.getSelectionModel().selectFirst();
+
+            dialog.getDialogPane().setContent(listView);
+
+            dialog.setResultConverter(dialogButton -> {
+                if (dialogButton == okButtonType) {
+                    return listView.getSelectionModel().getSelectedItem();
+                }
+                return null;
+            });
+
+            Optional<String> result = dialog.showAndWait();
+            if (result.isPresent()) {
+                inputArea.appendText(result.get());
+            }
+    }
+
     /**
      * You may change the cell factory if you changed the design of {@code Message} model.
      * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
@@ -482,7 +581,8 @@ public class Controller implements Initializable {
                     super.updateItem(msg, empty);
 
                     if (empty || msg == null) {
-
+                        setText(null);
+                        setGraphic(null);
                         return;
                     }
 
@@ -496,19 +596,32 @@ public class Controller implements Initializable {
 
                         nameLabel.setPrefSize(50, 20);
                         nameLabel.setWrapText(true);
-                        nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+                        nameLabel.setStyle("-fx-font-weight: bold;");
+                        Font font = Font.font("Segoe UI Emoji", FontWeight.NORMAL,26);
 
+                        String message = msg.getChat().getA()[i].replaceAll("\\\\u([0-9A-Fa-f]{4})", "&#x$1;");
+                        message = StringEscapeUtils.unescapeHtml4(message);
+
+                        msgLabel.setFont(font);
+                        msgLabel.setText(message);
+                        msgLabel.setPadding(new Insets(5));
+                        msgLabel.setStyle("-fx-background-color: #efefef; -fx-background-radius: 5px;");
 
                         if (msg.getChat().getB()[i].equals(username)) {
                             wrapper.setAlignment(Pos.TOP_RIGHT);
-
+                            nameLabel.setPadding(new Insets(0, 10, 0, 0));
+                            msgLabel.setPadding(new Insets(5, 15, 5, 15));
+                            msgLabel.setStyle("-fx-background-color: #007bff; -fx-background-radius: 5px; -fx-text-fill: white;");
+                            msgLabel.setAlignment(Pos.CENTER_RIGHT);
                             wrapper.getChildren().addAll(msgLabel, nameLabel);
-                            nameLabel.setPadding(new Insets(0, 20, 0, 0));
+                            /*nameLabel.setPadding(new Insets(0, 20, 0, 0));*/
                         } else {
-
+                            nameLabel.setPadding(new Insets(0, 0, 0, 10));
+                            msgLabel.setPadding(new Insets(5, 15, 5, 15));
+                            msgLabel.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 5px;");
                             wrapper.setAlignment(Pos.TOP_LEFT);
                             wrapper.getChildren().addAll(nameLabel, msgLabel);
-                            nameLabel.setPadding(new Insets(0, 0, 0, 20));
+                            /*nameLabel.setPadding(new Insets(0, 0, 0, 20));*/
                         }
 
                         container.getChildren().add(wrapper);

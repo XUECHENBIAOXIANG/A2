@@ -39,6 +39,7 @@ public class Chat {
         return b;
     }
 
+
     public void setA(String[] a) {
         this.a = a;
     }

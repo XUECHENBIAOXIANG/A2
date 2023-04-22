@@ -25,6 +25,10 @@ public class Message {
     private String sentBy;
     private String mima;
 
+    public void setType(MessageType type) {
+        this.type = type;
+    }
+
     private String sendTo;
 
     public void setData(String data) {
