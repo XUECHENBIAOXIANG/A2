@@ -4,11 +4,15 @@ import cn.edu.sustech.cs209.chatting.common.Chat;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
 
+import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -44,6 +48,7 @@ public class Main {
         private  String User;
         public ServerThread(Socket socket) {
               this.socket=socket;
+
         }
 
         @Override
@@ -52,6 +57,7 @@ public class Main {
                  in=new Scanner(socket.getInputStream());
                  out=new PrintWriter(socket.getOutputStream());
                  outputStreams.add(out);
+
                 doService(in,out);
             } catch (SocketException se) { /*处理用户断开的异常*/
 
@@ -78,6 +84,7 @@ public class Main {
             while (true){
                 if (in.hasNext()){
                     String line=in.nextLine();
+
                     Message message= Message.fromJson(line);
                     switch (message.getType()){
                         case ASKFORCONNECT:
@@ -359,6 +366,41 @@ public class Main {
                                 }
                                 }
                                 break;
+                        case Sendfile:
+                            String fileName =message.getMima();
+                            System.out.println(fileName);
+                            String encodedFile = message.getData();
+                            System.out.println(encodedFile);
+                            byte[] fileContent = Base64.getDecoder().decode(encodedFile);
+                            try {
+                                Files.write(Paths.get(fileName), fileContent);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            long rooo=message.getChat().getId();
+                            String wf="insert into chat_information values (?,?,?,?,?)";
+
+
+
+
+                            break;
+                        case askfile:
+                            File file = new File(message.getData());
+                            try {
+                                byte[] fileContent1 = Files.readAllBytes(file.toPath());
+                                String encodedFile1 = Base64.getEncoder().encodeToString(fileContent1);
+                                Message m=new Message(System.currentTimeMillis(),"","fuben"+message.getData(),"",encodedFile1,MessageType.Receivefile);
+                                String s=Message.toJson(m);
+                                out.println(s);
+                                out.flush();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }catch (Exception ddddd){
+                                ddddd.printStackTrace();
+                            }
+
+
+
                     }
 
 
@@ -393,7 +435,7 @@ public class Main {
         String sql="select max(id)from chat_information";PreparedStatement preparedStatement= con.prepareStatement(sql);
         ResultSet resultSet=preparedStatement.executeQuery();
         if (resultSet.next()){
-            use_max_id=resultSet.getLong(1);
+            use_max_id=resultSet.getLong(1)+1;
         }
 
     }

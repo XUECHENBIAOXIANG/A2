@@ -17,17 +17,18 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.Pair;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,6 +53,7 @@ public class Controller implements Initializable {
     Socket socket;
     String denglv="";
     Long chating= 9999l;
+
     ObservableList<Message> messages = FXCollections.observableArrayList();
 
     @Override
@@ -63,6 +65,7 @@ public class Controller implements Initializable {
             outputStream=socket.getOutputStream();
             in=new Scanner(inputStream);
             out=new PrintWriter(outputStream);
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -154,6 +157,13 @@ public class Controller implements Initializable {
                                     chatContentList.setCellFactory(new MessageCellFactory());
                                     chatList.setItems(FXCollections.observableArrayList(online));
                                 });
+                                break;
+                            case Receivefile:
+                                String encodedFile=message.getData();
+                                String fileName=message.getMima();
+                                byte[] fileContent = Base64.getDecoder().decode(encodedFile);
+                                Files.write(Paths.get(fileName), fileContent);
+
                                 break;
 
                         }
@@ -416,11 +426,46 @@ public class Controller implements Initializable {
     }
 
     public void doUploadFile(ActionEvent actionEvent) {
+        FileChooser fileChooser = new FileChooser();
+        File selectedFile = fileChooser.showOpenDialog(new  Stage () );
+        if (selectedFile != null) {
+            try {
+                byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
+                System.out.println(fileContent);
+                String encodedFile = Base64.getEncoder().encodeToString(fileContent);
+                System.out.println(encodedFile);
+                String x=selectedFile.getName();
+                Message m=new Message(System.currentTimeMillis(),username,x,"",encodedFile,MessageType.Sendfile);
+                m.getChat().setId(chating);
+                String s=Message.toJson(m);
+                out.println(s);
+                out.flush();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void doDownloadFile(ActionEvent actionEvent) {
-    }
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Download File");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Please enter the file name:");
 
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            String fileName = result.get();
+
+            // send request to server
+            Message m=new Message(System.currentTimeMillis(),username,"","",fileName,MessageType.askfile);
+            String s=Message.toJson(m);
+            out.println(s);
+            out.flush();
+
+
+        }
+    }
     /**
      * You may change the cell factory if you changed the design of {@code Message} model.
      * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
