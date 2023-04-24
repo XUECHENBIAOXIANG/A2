@@ -30,7 +30,7 @@ public class Main {
         getConnection();
         findid();
         System.out.println(use_max_id);
-        ServerSocket serverSocket = new ServerSocket(8888);
+        ServerSocket serverSocket = new ServerSocket(9999);
         while (true) {
             Socket socket = serverSocket.accept();
             System.out.println(socket.getInetAddress() + "连接上了本服务器");

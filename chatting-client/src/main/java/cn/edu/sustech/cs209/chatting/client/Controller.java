@@ -67,7 +67,7 @@ public class Controller implements Initializable {
 
         try {
 
-            socket = new Socket("localhost", 8888);
+            socket = new Socket("localhost", 9999);
             inputStream = socket.getInputStream();
             outputStream = socket.getOutputStream();
             in = new Scanner(inputStream);
@@ -635,7 +635,7 @@ public class Controller implements Initializable {
 
                         container.getChildren().add(wrapper);
                     }
-
+                    container.setStyle("-fx-background-color: #ffffff; -fx-background-size: cover;");
                     setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
                     setGraphic(container);
                 }
