@@ -38,9 +38,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Controller implements Initializable {
 
     private List<String> chat_users = new ArrayList<>();
-    private List<String> online=new ArrayList<>();
-    @FXML Label currentUsername;
-    @FXML Label currentOnlineCnt;
+    private List<String> online = new ArrayList<>();
+    @FXML
+    Label currentUsername;
+    @FXML
+    Label currentOnlineCnt;
     @FXML
     ListView<String> chatList;
     @FXML
@@ -53,10 +55,10 @@ public class Controller implements Initializable {
     OutputStream outputStream;
     Scanner in;
     PrintWriter out;
-    String username="";
+    String username = "";
     Socket socket;
-    String denglv="";
-    Long chating= 9999l;
+    String denglv = "";
+    Long chating = 9999l;
 
     ObservableList<Message> messages = FXCollections.observableArrayList();
 
@@ -65,11 +67,11 @@ public class Controller implements Initializable {
 
         try {
 
-            socket=new Socket("localhost",8888);
-            inputStream=socket.getInputStream();
-            outputStream=socket.getOutputStream();
-            in=new Scanner(inputStream);
-            out=new PrintWriter(outputStream);
+            socket = new Socket("localhost", 8888);
+            inputStream = socket.getInputStream();
+            outputStream = socket.getOutputStream();
+            in = new Scanner(inputStream);
+            out = new PrintWriter(outputStream);
 
 
         } catch (IOException e) {
@@ -78,20 +80,20 @@ public class Controller implements Initializable {
         new Thread(() -> {
             try {
                 while (true) {  // 修改while条件，当线程被中断时跳出循环
-                    if (in!=null&&in.hasNext()){
-                        String line=in.nextLine();
-                        Message message= Message.fromJson(line);
+                    if (in != null && in.hasNext()) {
+                        String line = in.nextLine();
+                        Message message = Message.fromJson(line);
 
-                        switch (message.getType()){
-                            case  CONNECT:
+                        switch (message.getType()) {
+                            case CONNECT:
 
-                                Platform.runLater(()->{
-                                    username=message.getSendTo();
-                                    chat_users=message.getPeople();
-                                    online=message.getAllchat();
+                                Platform.runLater(() -> {
+                                    username = message.getSendTo();
+                                    chat_users = message.getPeople();
+                                    online = message.getAllchat();
                                     chatList.setItems(FXCollections.observableArrayList(online));
-                                    currentOnlineCnt.setText("Online:"+chat_users.size());
-                                    currentUsername.setText("Current User: "+username);
+                                    currentOnlineCnt.setText("Online:" + chat_users.size());
+                                    currentUsername.setText("Current User: " + username);
                                     onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
 
                                 });
@@ -99,8 +101,9 @@ public class Controller implements Initializable {
                                 break;
                             case OtherConnect:
 
-                                Platform.runLater(()->{ chat_users=message.getPeople();
-                                    currentOnlineCnt.setText("Online:"+chat_users.size());
+                                Platform.runLater(() -> {
+                                    chat_users = message.getPeople();
+                                    currentOnlineCnt.setText("Online:" + chat_users.size());
                                     onlineUsersList.setItems(FXCollections.observableArrayList(chat_users));
                                 });
                                 break;
@@ -113,7 +116,8 @@ public class Controller implements Initializable {
                                     alert.setContentText("该用户已经登录");
                                     alert.showAndWait();
                                     try {
-                                        socket.close();in.close();
+                                        socket.close();
+                                        in.close();
                                         out.close();
                                         System.exit(0);
                                     } catch (IOException e) {
@@ -122,7 +126,7 @@ public class Controller implements Initializable {
                                 });
                                 break;
                             case DISCONNECT:
-                                denglv="shibai";
+                                denglv = "shibai";
                                 Platform.runLater(() -> {
                                     // 在 UI 线程中弹出提示
                                     Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -131,7 +135,8 @@ public class Controller implements Initializable {
                                     alert.setContentText("密码错误 and try again.");
                                     alert.showAndWait();
                                     try {
-                                        socket.close();in.close();
+                                        socket.close();
+                                        in.close();
                                         out.close();
                                         System.exit(0);
                                     } catch (IOException e) {
@@ -141,23 +146,24 @@ public class Controller implements Initializable {
                                 break;
                             case Receive:
 
-                                Platform.runLater(()-> {
+                                Platform.runLater(() -> {
                                /* chat_users .clear();
                                 chat_users=message.getAllchat();*/
 
                                     System.out.println(message.getChat().getId());
                                     System.out.println(chating);
-                                    if (!message.getData().equals("1")){
+                                    if (!message.getData().equals("1")) {
                                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                         alert.setTitle("通知");
                                         alert.setHeaderText("您有新的信息");
                                         alert.setContentText("您有新的信息");
                                         alert.showAndWait();
-                                    online.clear();
-                                    online.addAll(message.getAllchat());
+                                        online.clear();
+                                        online.addAll(message.getAllchat());
 
-                                    chatList.setItems(FXCollections.observableArrayList(online));}
-                                    if (message.getChat().getId()==chating){
+                                        chatList.setItems(FXCollections.observableArrayList(online));
+                                    }
+                                    if (message.getChat().getId() == chating) {
                                         Platform.runLater(() -> {
                                             messages.clear();
                                             messages.add(message);
@@ -165,22 +171,23 @@ public class Controller implements Initializable {
                                             chatContentList.setCellFactory(new MessageCellFactory());
                                         });
                                     }
-                                } );
+                                });
                                 break;
                             case myreceive:
 
 
-                                Platform.runLater(()-> {
+                                Platform.runLater(() -> {
                                /* chat_users .clear();
                                 chat_users=message.getAllchat();*/
                                     System.out.println(message.getChat().getId());
                                     System.out.println(chating);
-                                    if (!message.getData().equals("1")){
+                                    if (!message.getData().equals("1")) {
                                         online.clear();
                                         online.addAll(message.getAllchat());
                                         System.out.println(message.getAllchat());
-                                        chatList.setItems(FXCollections.observableArrayList(online));}
-                                    if (message.getChat().getId()==chating){
+                                        chatList.setItems(FXCollections.observableArrayList(online));
+                                    }
+                                    if (message.getChat().getId() == chating) {
                                         Platform.runLater(() -> {
                                             messages.clear();
                                             messages.add(message);
@@ -188,13 +195,13 @@ public class Controller implements Initializable {
                                             chatContentList.setCellFactory(new MessageCellFactory());
                                         });
                                     }
-                                } );
+                                });
                                 break;
 
 
                             case GetChat:
-                                chating=message.getChat().getId();
-                                Platform.runLater(() ->{
+                                chating = message.getChat().getId();
+                                Platform.runLater(() -> {
                                     messages.clear();
                                     messages.add(message);
                                     online.clear();
@@ -206,23 +213,23 @@ public class Controller implements Initializable {
                                 });
                                 break;
                             case Receivefile:
-                                String encodedFile=message.getData();
-                                String fileName=message.getMima();
+                                String encodedFile = message.getData();
+                                String fileName = message.getMima();
                                 byte[] fileContent = Base64.getDecoder().decode(encodedFile);
                                 Files.write(Paths.get(fileName), fileContent);
 
                                 break;
 
                         }
-                    }else  {
+                    } else {
                         Platform.runLater(() -> {
-                            Alert alert = new Alert(Alert.AlertType.WARNING);
-                            alert.setTitle("连接断开");
-                            alert.setHeaderText(null);
-                            alert.setContentText("与服务器连接断开");
-                            alert.showAndWait();
-                            in.close();
-                            out.close();
+                                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                                    alert.setTitle("连接断开");
+                                    alert.setHeaderText(null);
+                                    alert.setContentText("与服务器连接断开");
+                                    alert.showAndWait();
+                                    in.close();
+                                    out.close();
                                     try {
                                         socket.close();
                                     } catch (IOException e) {
@@ -230,13 +237,13 @@ public class Controller implements Initializable {
                                     }
                                     System.exit(0); // 关闭进程
 
-                        }
+                                }
                         );
                         break;
                     }
                 }
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -283,8 +290,8 @@ public class Controller implements Initializable {
             // 处理用户输入
             String username = result.get().getKey();
             String password = result.get().getValue();
-            Message message=new Message(System.currentTimeMillis(),username,password,username,"", MessageType.ASKFORCONNECT);
-            String aaa=Message.toJson(message);
+            Message message = new Message(System.currentTimeMillis(), username, password, username, "", MessageType.ASKFORCONNECT);
+            String aaa = Message.toJson(message);
             out.println(aaa);
 
             out.flush();
@@ -297,15 +304,15 @@ public class Controller implements Initializable {
             alert.showAndWait();
             Platform.exit();
         }
-         Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.CONNECT);
-        String[] dd=new String[2];
-        dd[0]="123";
-        dd[1]="253";
-        String[] bb=new String[2];
-        bb[0]="123";
-        bb[1]="";
-        message.getChat().a=dd;
-        message.getChat().b=bb;
+        Message message = new Message(System.currentTimeMillis(), "", "", "", "", MessageType.CONNECT);
+        String[] dd = new String[2];
+        dd[0] = "123";
+        dd[1] = "253";
+        String[] bb = new String[2];
+        bb[0] = "123";
+        bb[1] = "";
+        message.getChat().a = dd;
+        message.getChat().b = bb;
 
         chatList.setItems(FXCollections.observableArrayList(online));
 
@@ -317,7 +324,7 @@ public class Controller implements Initializable {
             @Override
             public void handle(MouseEvent event) {
                 String selectedItem = chatList.getSelectionModel().getSelectedItem();
-                if (selectedItem!=null) {
+                if (selectedItem != null) {
                     Message message = new Message(System.currentTimeMillis(), "", "", "", "1", MessageType.newchat);
                     List<String> a = Arrays.asList(selectedItem.split(",", -1));
                     message.setAskchat(a);
@@ -371,20 +378,20 @@ public class Controller implements Initializable {
         okBtn.setOnAction(e -> {
             user1.set(userSel.getSelectionModel().getSelectedItem());
 
-            Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.newchat);
-            List<String> a=new ArrayList<>();
+            Message message = new Message(System.currentTimeMillis(), "", "", "", "", MessageType.newchat);
+            List<String> a = new ArrayList<>();
             a.add(user1.get());
-            if (a.get(0)==null){
+            if (a.get(0) == null) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("renshubugou");
                 alert.setContentText("人数不够，请选择至少一人");
                 alert.showAndWait();
-            }else {
+            } else {
 
                 a.add(username);
                 message.setAskchat(a);
-                String x=Message.toJson(message);
+                String x = Message.toJson(message);
                 out.println(x);
                 out.flush();
                 stage.close();
@@ -431,37 +438,39 @@ public class Controller implements Initializable {
         // 创建一个 CheckBox 列表，用于选择用户
         List<CheckBox> checkBoxList = new ArrayList<>();
         for (String user : allUsers) {
-            if (!user.equals(username)){
-            CheckBox checkBox = new CheckBox(user);
-            checkBoxList.add(checkBox);
-            vBox.getChildren().add(checkBox);}
+            if (!user.equals(username)) {
+                CheckBox checkBox = new CheckBox(user);
+                checkBoxList.add(checkBox);
+                vBox.getChildren().add(checkBox);
+            }
         }
 
         Button okBtn = new Button("OK");
         okBtn.setOnAction(e -> {
             // 获取选择的用户，创建群聊
-            int x=1;
+            int x = 1;
             List<String> selectedUsers = new ArrayList<>();
             for (CheckBox checkBox : checkBoxList) {
-                if (checkBox.isSelected()) {x++;
+                if (checkBox.isSelected()) {
+                    x++;
                     selectedUsers.add(checkBox.getText());
                 }
             }
-             if (x>2){
-                    selectedUsers.add(username);
-                 Message message=new Message(System.currentTimeMillis(),"","","","",MessageType.newchat);
-                 message.setAskchat(selectedUsers);
-                 String y=Message.toJson(message);
-                 out.println(y);
-                 out.flush();
+            if (x > 2) {
+                selectedUsers.add(username);
+                Message message = new Message(System.currentTimeMillis(), "", "", "", "", MessageType.newchat);
+                message.setAskchat(selectedUsers);
+                String y = Message.toJson(message);
+                out.println(y);
+                out.flush();
 
-             }else {
-                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                 alert.setTitle("Error");
-                 alert.setHeaderText("renshubugou");
-                 alert.setContentText("人数不够，请选择至少两人");
-                 alert.showAndWait();
-             }
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("renshubugou");
+                alert.setContentText("人数不够，请选择至少两人");
+                alert.showAndWait();
+            }
             // 在这里创建群聊，将 selectedUsers 传入即可
 
             stage.close();
@@ -483,11 +492,11 @@ public class Controller implements Initializable {
     public void doSendMessage() {
         String text = inputArea.getText().trim(); // 获取输入框的文本内容
         System.out.println(chating);
-        if (!text.isEmpty()&chating!=9999l) { // 确保输入内容不为空且选择过某个聊天
-           Message m=new Message(System.currentTimeMillis(),username,"","",text,MessageType.Send);
+        if (!text.isEmpty() & chating != 9999l) { // 确保输入内容不为空且选择过某个聊天
+            Message m = new Message(System.currentTimeMillis(), username, "", "", text, MessageType.Send);
 
-           m.getChat().setId(chating);
-            String s=Message.toJson(m);
+            m.getChat().setId(chating);
+            String s = Message.toJson(m);
             out.println(s);
             out.flush();
             inputArea.clear();
@@ -496,17 +505,17 @@ public class Controller implements Initializable {
 
     public void doUploadFile(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
-        File selectedFile = fileChooser.showOpenDialog(new  Stage () );
+        File selectedFile = fileChooser.showOpenDialog(new Stage());
         if (selectedFile != null) {
             try {
                 byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
                 System.out.println(fileContent);
                 String encodedFile = Base64.getEncoder().encodeToString(fileContent);
                 System.out.println(encodedFile);
-                String x=selectedFile.getName();
-                Message m=new Message(System.currentTimeMillis(),username,x,"",encodedFile,MessageType.Sendfile);
+                String x = selectedFile.getName();
+                Message m = new Message(System.currentTimeMillis(), username, x, "", encodedFile, MessageType.Sendfile);
                 m.getChat().setId(chating);
-                String s=Message.toJson(m);
+                String s = Message.toJson(m);
                 out.println(s);
                 out.flush();
 
@@ -527,8 +536,8 @@ public class Controller implements Initializable {
             String fileName = result.get();
 
             // send request to server
-            Message m=new Message(System.currentTimeMillis(),username,"","",fileName,MessageType.askfile);
-            String s=Message.toJson(m);
+            Message m = new Message(System.currentTimeMillis(), username, "", "", fileName, MessageType.askfile);
+            String s = Message.toJson(m);
             out.println(s);
             out.flush();
 
@@ -538,31 +547,31 @@ public class Controller implements Initializable {
 
     public void showEmojiSelector(ActionEvent actionEvent) {
 
-            Dialog<String> dialog = new Dialog<>();
-            dialog.setTitle("Select Emoji");
-            dialog.setHeaderText("Please select an emoji:");
-            ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-            dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Select Emoji");
+        dialog.setHeaderText("Please select an emoji:");
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
-            ListView<String> listView = new ListView<>();
+        ListView<String> listView = new ListView<>();
         listView.setCellFactory(param -> new EmojiCell());
-            ObservableList<String> emojiList = FXCollections.observableArrayList("😊", "😂", "👍", "❤ ","😂", "😊", "👍", "👎", "🤔", "😘", "😍", "🤩", "🙏", "👋", "💪", "🤢", "🤮", "🤯", "😱", "😴", "😷", "🤒", "🥺", "👀");
-            listView.setItems(emojiList);
-            listView.getSelectionModel().selectFirst();
+        ObservableList<String> emojiList = FXCollections.observableArrayList("😊", "😂", "👍", "❤ ", "😂", "😊", "👍", "👎", "🤔", "😘", "😍", "🤩", "🙏", "👋", "💪", "🤢", "🤮", "🤯", "😱", "😴", "😷", "🤒", "🥺", "👀");
+        listView.setItems(emojiList);
+        listView.getSelectionModel().selectFirst();
 
-            dialog.getDialogPane().setContent(listView);
+        dialog.getDialogPane().setContent(listView);
 
-            dialog.setResultConverter(dialogButton -> {
-                if (dialogButton == okButtonType) {
-                    return listView.getSelectionModel().getSelectedItem();
-                }
-                return null;
-            });
-
-            Optional<String> result = dialog.showAndWait();
-            if (result.isPresent()) {
-                inputArea.appendText(result.get());
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                return listView.getSelectionModel().getSelectedItem();
             }
+            return null;
+        });
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            inputArea.appendText(result.get());
+        }
     }
 
     /**
@@ -590,14 +599,14 @@ public class Controller implements Initializable {
 
                     for (int i = 0; i < msg.getChat().getA().length; i++) {
                         HBox wrapper = new HBox();
-                        Label nameLabel = new Label(msg.getChat().getB()[i] );
+                        Label nameLabel = new Label(msg.getChat().getB()[i]);
                         Label msgLabel = new Label(msg.getChat().getA()[i]);
 
 
                         nameLabel.setPrefSize(50, 20);
                         nameLabel.setWrapText(true);
                         nameLabel.setStyle("-fx-font-weight: bold;");
-                        Font font = Font.font("Segoe UI Emoji", FontWeight.NORMAL,26);
+                        Font font = Font.font("Segoe UI Emoji", FontWeight.NORMAL, 26);
 
                         String message = msg.getChat().getA()[i].replaceAll("\\\\u([0-9A-Fa-f]{4})", "&#x$1;");
                         message = StringEscapeUtils.unescapeHtml4(message);

@@ -7,11 +7,7 @@ import java.util.List;
 public class Message {
 
     private Long timestamp;
-    private Chat chat=new Chat();
-
-
-
-
+    private Chat chat = new Chat();
 
 
     public Chat getChat() {

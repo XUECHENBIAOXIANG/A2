@@ -3,7 +3,7 @@ package cn.edu.sustech.cs209.chatting.common;
 public class Chat {
     private Long timestamp;
     private Long id;
-    private String[]talk;
+    private String[] talk;
     public String[] a;
     public String[] b;
 
