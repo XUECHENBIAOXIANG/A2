@@ -75,7 +75,12 @@ public class Controller implements Initializable {
 
 
         } catch (IOException e) {
-            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("连接断开");
+            alert.setHeaderText(null);
+            alert.setContentText("与服务器连接断开");
+            alert.showAndWait();
+            System.exit(0);
         }
         new Thread(() -> {
             try {
@@ -595,7 +600,9 @@ public class Controller implements Initializable {
                         return;
                     }
 
+
                     VBox container = new VBox();
+
 
                     for (int i = 0; i < msg.getChat().getA().length; i++) {
                         HBox wrapper = new HBox();
